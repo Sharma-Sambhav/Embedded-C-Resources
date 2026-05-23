@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embedded Firmware — Tier 1 Study Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & tokens ───────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+  :root {
+    --bg:        #0d1117;
+    --bg2:       #161b22;
+    --bg3:       #1c2333;
+    --bg4:       #21262d;
+    --border:    #30363d;
+    --border2:   #484f58;
+    --text:      #e6edf3;
+    --text2:     #8b949e;
+    --text3:     #6e7681;
+    --accent:    #58a6ff;
+    --accent-bg: rgba(88,166,255,0.1);
+    --green:     #3fb950;
+    --green-bg:  rgba(63,185,80,0.1);
+    --amber:     #d29922;
+    --amber-bg:  rgba(210,153,34,0.1);
+    --red:       #f85149;
+    --red-bg:    rgba(248,81,73,0.1);
+    --purple:    #bc8cff;
+    --purple-bg: rgba(188,140,255,0.1);
+    --teal:      #39d353;
+    --mono:      'JetBrains Mono', monospace;
+    --sans:      'IBM Plex Sans', sans-serif;
+    --serif:     'IBM Plex Serif', serif;
+    --radius:    6px;
+    --radius-lg: 10px;
+  }
+ 
+  html { scroll-behavior: smooth; }
+ 
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+ 
+  /* ── Layout ───────────────────────────────────────────────── */
+  .app { display: flex; min-height: 100vh; }
+ 
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    min-width: 220px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+ 
+  .sidebar-header {
+    padding: 20px 16px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+ 
+  .sidebar-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+ 
+  .sidebar-subtitle {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.3;
+  }
+ 
+  .nav-section {
+    padding: 12px 8px;
+    flex: 1;
+  }
+ 
+  .nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 0 8px;
+    margin-bottom: 6px;
+    margin-top: 8px;
+  }
+ 
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: var(--radius);
+    border: none;
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.12s;
+    position: relative;
+  }
+ 
+  .nav-btn:hover { background: var(--bg3); color: var(--text); }
+ 
+  .nav-btn.active {
+    background: var(--accent-bg);
+    color: var(--accent);
+    font-weight: 500;
+  }
+ 
+  .nav-btn.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 4px; bottom: 4px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+ 
+  .nav-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    margin-left: auto;
+  }
+ 
+  .nav-btn.active .nav-num { color: var(--accent); opacity: 0.6; }
+ 
+  .progress-section {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+ 
+  .progress-label {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+ 
+  .progress-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+ 
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+ 
+  /* Main content */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+ 
+  .topbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+ 
+  .topbar-topic {
+    font-size: 13px;
+    color: var(--text2);
+  }
+ 
+  .topbar-topic strong { color: var(--text); font-weight: 500; }
+ 
+  .tab-row {
+    display: flex;
+    gap: 4px;
+  }
+ 
+  .tab-btn {
+    padding: 5px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+ 
+  .tab-btn:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+ 
+  .tab-btn.active {
+    background: var(--bg3);
+    color: var(--text);
+    border-color: var(--border2);
+  }
+ 
+  .content { padding: 28px; max-width: 860px; }
+ 
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+ 
+  /* Sub-tabs within a panel */
+  .subtab { display: none; }
+  .subtab.active { display: block; }
+ 
+  /* ── Typography ───────────────────────────────────────────── */
+  .topic-title {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 400;
+    color: var(--text);
+    margin-bottom: 6px;
+    line-height: 1.25;
+  }
+ 
+  .topic-tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--amber-bg);
+    color: var(--amber);
+    margin-left: 8px;
+    vertical-align: middle;
+    letter-spacing: 0.05em;
+  }
+ 
+  .topic-intro {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 24px;
+    max-width: 640px;
+    border-left: 2px solid var(--border2);
+    padding-left: 14px;
+  }
+ 
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin: 24px 0 10px;
+  }
+ 
+  /* ── Code blocks ──────────────────────────────────────────── */
+  .code-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin: 10px 0;
+  }
+ 
+  .code-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+ 
+  .code-dots { display: flex; gap: 5px; }
+  .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .code-dot:nth-child(1) { background: #f85149; opacity: 0.6; }
+  .code-dot:nth-child(2) { background: #d29922; opacity: 0.6; }
+  .code-dot:nth-child(3) { background: #3fb950; opacity: 0.6; }
+ 
+  .code-block {
+    padding: 16px 18px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre;
+    overflow-x: auto;
+  }
+ 
+  .kw  { color: #ff7b72; }
+  .cm  { color: var(--text3); font-style: italic; }
+  .num { color: #79c0ff; }
+  .str { color: #a5d6ff; }
+  .fn  { color: #d2a8ff; }
+  .mac { color: var(--amber); }
+  .op  { color: var(--text2); }
+ 
+  /* ── Cards & grids ────────────────────────────────────────── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin: 10px 0;
+  }
+ 
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+  }
+ 
+  .card:hover { border-color: var(--border2); }
+ 
+  .card h4 {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+ 
+  .card p { font-size: 12px; color: var(--text2); line-height: 1.5; }
+ 
+  /* ── Memory visualiser ────────────────────────────────────── */
+  .mem-table {
+    font-family: var(--mono);
+    font-size: 12px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+ 
+  .mem-table td {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+  }
+ 
+  .mem-table td.addr {
+    background: var(--bg3);
+    color: var(--text3);
+    font-size: 11px;
+    width: 90px;
+  }
+ 
+  .mem-table td.val { color: var(--text); background: var(--bg2); }
+  .mem-table td.ptr { color: var(--accent); background: var(--accent-bg); }
+  .mem-table td.note { color: var(--text2); font-size: 11px; border-left: none; background: transparent; border-top: none; border-right: none; font-family: var(--sans); }
+ 
+  /* ── Interactive bits ─────────────────────────────────────── */
+  .viz-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    margin: 10px 0;
+  }
+ 
+  .viz-label {
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 12px;
+    font-family: var(--mono);
+  }
+ 
+  .bit-row { display: flex; gap: 5px; flex-wrap: wrap; }
+ 
+  .bit {
+    width: 40px; height: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 16px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.1s;
+    background: var(--bg3);
+    color: var(--text2);
+    user-select: none;
+  }
+ 
+  .bit:hover { border-color: var(--accent); color: var(--accent); }
+  .bit.on { background: var(--accent-bg); color: var(--accent); border-color: var(--accent); }
+ 
+  .bit-labels { display: flex; gap: 5px; margin-top: 4px; }
+ 
+  .bit-lbl {
+    width: 40px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    text-align: center;
+  }
+ 
+  .result-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+ 
+  .chip {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    font-size: 12px;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+ 
+  .chip span { color: var(--accent); font-weight: 500; }
+ 
+  /* ── Memory map strips ────────────────────────────────────── */
+  .mem-map { border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); margin: 10px 0; }
+ 
+  .mem-strip {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+  }
+ 
+  .mem-strip:last-child { border-bottom: none; }
+  .mem-strip .addr { color: var(--text3); font-size: 11px; min-width: 90px; }
+  .mem-strip .desc { color: var(--text2); font-size: 12px; font-family: var(--sans); }
+  .mem-strip .badge {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-family: var(--sans);
+    font-weight: 500;
+  }
+ 
+  .ms-sys  { background: rgba(248,81,73,0.08); }
+  .ms-per  { background: rgba(210,153,34,0.08); }
+  .ms-ram  { background: rgba(63,185,80,0.08); }
+  .ms-rom  { background: rgba(88,166,255,0.08); }
+  .ms-vec  { background: var(--bg2); }
+ 
+  /* ── Quiz ─────────────────────────────────────────────────── */
+  .quiz-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    margin-top: 8px;
+  }
+ 
+  .quiz-q { font-size: 13px; color: var(--text); margin-bottom: 12px; line-height: 1.5; }
+  .quiz-q code { font-family: var(--mono); color: var(--accent); font-size: 12px; }
+ 
+  .quiz-options { display: flex; flex-wrap: wrap; gap: 8px; }
+ 
+  .qbtn {
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg3);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+ 
+  .qbtn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .qbtn:disabled { cursor: default; }
+  .qbtn.correct { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .qbtn.wrong   { background: var(--red-bg);   color: var(--red);   border-color: var(--red); }
+ 
+  .quiz-feedback {
+    margin-top: 10px;
+    font-size: 12px;
+    display: none;
+    line-height: 1.5;
+  }
+ 
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.ok  { color: var(--green); }
+  .quiz-feedback.bad { color: var(--text2); }
+ 
+  /* ── Deep dive exercises ──────────────────────────────────── */
+  .exercise-set { margin-top: 4px; }
+ 
+  .exercise {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+ 
+  .ex-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    user-select: none;
+  }
+ 
+  .ex-header:hover { background: var(--bg4); }
+ 
+  .ex-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--purple-bg);
+    color: var(--purple);
+    font-weight: 600;
+  }
+ 
+  .ex-title { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+ 
+  .ex-diff {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+ 
+  .diff-easy   { background: var(--green-bg);  color: var(--green); }
+  .diff-medium { background: var(--amber-bg);  color: var(--amber); }
+  .diff-hard   { background: var(--red-bg);    color: var(--red); }
+ 
+  .ex-chevron {
+    font-size: 14px;
+    color: var(--text3);
+    transition: transform 0.2s;
+  }
+ 
+  .ex-chevron.open { transform: rotate(90deg); }
+ 
+  .ex-body {
+    padding: 16px 18px;
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+ 
+  .ex-body.open { display: block; }
+ 
+  .ex-desc {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+ 
+  .ex-desc code { font-family: var(--mono); color: var(--accent); font-size: 11.5px; }
+ 
+  .hint-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text3);
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.12s;
+  }
+ 
+  .hint-btn:hover { border-color: var(--amber); color: var(--amber); }
+ 
+  .hint-box {
+    display: none;
+    background: var(--amber-bg);
+    border: 1px solid rgba(210,153,34,0.3);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--amber);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+ 
+  .hint-box.show { display: block; }
+  .hint-box code { font-family: var(--mono); font-size: 11px; }
+ 
+  .answer-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text3);
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+ 
+  .answer-btn:hover { border-color: var(--green); color: var(--green); }
+ 
+  .answer-box { display: none; margin-top: 12px; }
+  .answer-box.show { display: block; }
+ 
+  /* ── Register viz ─────────────────────────────────────────── */
+  .reg-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+ 
+  .reg-bit {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 7px 2px;
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.12s;
+    background: var(--bg3);
+    color: var(--text2);
+    user-select: none;
+  }
+ 
+  .reg-bit:hover { border-color: var(--accent); color: var(--accent); }
+  .reg-bit.set { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+ 
+  .reg-names {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+ 
+  .reg-name {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--text3);
+    text-align: center;
+  }
+ 
+  .reg-val-display {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+ 
+  /* ── Inline note/callout ──────────────────────────────────── */
+  .callout {
+    display: flex;
+    gap: 10px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin: 12px 0;
+    font-size: 12.5px;
+    color: var(--text2);
+    line-height: 1.6;
+  }
+ 
+  .callout.warn { border-left-color: var(--amber); }
+  .callout.ok   { border-left-color: var(--green); }
+  .callout code { font-family: var(--mono); color: var(--accent); font-size: 11.5px; }
+ 
+  /* ── Scrollbar ────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+ 
+  /* ── Code Editor ─────────────────────────────────────────── */
+  .code-editor-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin: 16px 0;
+  }
+
+  .code-editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .code-editor-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .code-editor-filename {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  .code-editor-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .editor-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--sans);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .editor-action-btn:hover {
+    border-color: var(--border2);
+    color: var(--text);
+    background: var(--bg4);
+  }
+
+  .editor-action-btn.primary {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .editor-action-btn.primary:hover {
+    background: rgba(88,166,255,0.2);
+  }
+
+  .code-editor-body {
+    height: 280px;
+    position: relative;
+  }
+
+  .monaco-container {
+    width: 100%;
+    height: 100%;
+  }
+
+  .code-editor-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg3);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+  }
+
+  .toast-notification {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--bg3);
+    border: 1px solid var(--green);
+    border-radius: var(--radius-lg);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--green);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    z-index: 9999;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+    max-width: 380px;
+  }
+
+  .toast-notification.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── Responsive ───────────────────────────────────────────── */
+  @media (max-width: 680px) {
+    .sidebar { display: none; }
+    .content { padding: 16px; }
+    .code-editor-toolbar { flex-direction: column; align-items: flex-start; }
+    .code-editor-toolbar-right { width: 100%; }
+    .editor-action-btn { flex: 1; justify-content: center; }
+    .code-editor-body { height: 220px; }
+  }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+<script src="Pointers/theory.js"></script>
+<script src="Pointers/data.js"></script>
+<script src="BitManipulation/data.js"></script>
+<script src="Volatile/data.js"></script>
+<script src="Structs/data.js"></script>
+<script src="MemoryLayout/data.js"></script>
+<script src="Interrupts/data.js"></script>
+<script src="RegisterProgramming/data.js"></script>
+</head>
+<body>
+ 
+<div class="app">
+ 
+  <!-- ── Sidebar ───────────────────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">Tier 1 Topics</div>
+      <div class="sidebar-subtitle">Embedded Firmware Core</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Topics</div>
+      <button class="nav-btn active" onclick="showTopic(0,this)">
+        Pointers <span class="nav-num">01</span>
+      </button>
+      <button class="nav-btn" onclick="showTopic(1,this)">
+        Bit Manipulation <span class="nav-num">02</span>
+      </button>
+      <button class="nav-btn" onclick="showTopic(2,this)">
+        volatile <span class="nav-num">03</span>
+      </button>
+      <button class="nav-btn" onclick="showTopic(3,this)">
+        Structs <span class="nav-num">04</span>
+      </button>
+      <button class="nav-btn" onclick="showTopic(4,this)">
+        Memory Layout <span class="nav-num">05</span>
+      </button>
+      <button class="nav-btn" onclick="showTopic(5,this)">
+        Interrupts <span class="nav-num">06</span>
+      </button>
+      <button class="nav-btn" onclick="showTopic(6,this)">
+        Register Programming <span class="nav-num">07</span>
+      </button>
+    </div>
+    <div class="progress-section">
+      <div class="progress-label">
+        <span>Progress</span>
+        <span id="prog-text">0 / 7</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill"></div>
+      </div>
+    </div>
+  </nav>
+ 
+  <!-- ── Main ──────────────────────────────────────────────── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-topic">
+        Embedded C &rsaquo; <strong id="topbar-name">Pointers</strong>
+      </div>
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="showSubtab('learn',this)">Learn</button>
+        <button class="tab-btn" onclick="showSubtab('quiz',this)">Quiz</button>
+        <button class="tab-btn" onclick="showSubtab('exercises',this)">Exercises</button>
+      </div>
+    </div>
+ 
+    <div class="content">
+ 
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!--  TOPIC 0 — POINTERS                                -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="panel active" id="t0">
+ 
+        <!-- LEARN -->
+        <div class="subtab active" id="t0-learn">
+          <div id="t0-theory"></div>
+        </div>
+ 
+        <!-- QUIZ -->
+        <div class="subtab" id="t0-quiz">
+          <h1 class="topic-title">Pointers — Quiz</h1>
+          <div id="t0-quiz-content"></div>
+        </div>
+ 
+        <!-- EXERCISES -->
+        <div class="subtab" id="t0-exercises">
+          <h1 class="topic-title">Pointers — Exercises</h1>
+          <div class="exercise-set" id="t0-ex-content"></div>
+        </div>
+      </div>
+ 
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!--  TOPIC 1 — BIT MANIPULATION                        -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="panel" id="t1">
+ 
+        <div class="subtab active" id="t1-learn">
+          <h1 class="topic-title">Bit Manipulation</h1>
+          <p class="topic-intro">Every peripheral register is a packed collection of bits. You must set, clear, toggle, and read individual bits without disturbing the others. Four operations cover 95% of firmware needs.</p>
+ 
+          <div class="section-label">Interactive register — click bits to toggle</div>
+          <div class="viz-box">
+            <div class="viz-label">8-bit register (click any bit)</div>
+            <div class="bit-row" id="bit-row"></div>
+            <div class="bit-labels" id="bit-labels"></div>
+            <div class="result-chips" id="bit-results"></div>
+          </div>
+ 
+          <div class="section-label">The four operations</div>
+          <div class="code-wrap">
+            <div class="code-bar"><div class="code-dots"><span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span></div><span>bitops.c</span></div>
+            <div class="code-block"><span class="kw">uint8_t</span> reg = <span class="num">0b00101100</span>;
+ 
+<span class="cm">// SET bit n   →  OR with mask</span>
+reg |= (<span class="num">1</span> &lt;&lt; <span class="num">3</span>);
+ 
+<span class="cm">// CLEAR bit n →  AND with inverted mask</span>
+reg &amp;= ~(<span class="num">1</span> &lt;&lt; <span class="num">5</span>);
+ 
+<span class="cm">// TOGGLE bit n → XOR with mask</span>
+reg ^= (<span class="num">1</span> &lt;&lt; <span class="num">2</span>);
+ 
+<span class="cm">// CHECK bit n  → AND, result is non-zero if set</span>
+<span class="kw">if</span> (reg &amp; (<span class="num">1</span> &lt;&lt; <span class="num">4</span>)) { <span class="fn">handle_event</span>(); }
+ 
+<span class="cm">// Multi-bit field: set CR1[5:4] = 0b10</span>
+reg &amp;= ~(<span class="num">0x3</span> &lt;&lt; <span class="num">4</span>);   <span class="cm">// clear the two bits first</span>
+reg |=  (<span class="num">0x2</span> &lt;&lt; <span class="num">4</span>);   <span class="cm">// then write the value</span>
+ 
+<span class="cm">// STM32: enable GPIOA clock (real code)</span>
+RCC-&gt;AHB1ENR |= RCC_AHB1ENR_GPIOAEN;</div>
+          </div>
+ 
+          <div class="card-grid" style="margin-top:14px">
+            <div class="card"><h4>| (OR)</h4><p>Sets bits. Never clears. Use to turn bits ON.</p></div>
+            <div class="card"><h4>&amp; (AND)</h4><p>Keeps bits. Use with ~mask to clear specific bits.</p></div>
+            <div class="card"><h4>^ (XOR)</h4><p>Flips bits. Toggle a pin or invert a flag.</p></div>
+            <div class="card"><h4>~ (NOT)</h4><p>Inverts all bits. Essential for building clear masks.</p></div>
+          </div>
+        </div>
+ 
+        <div class="subtab" id="t1-quiz">
+          <h1 class="topic-title">Bit Manipulation — Quiz</h1>
+          <div id="t1-quiz-content"></div>
+        </div>
+        <div class="subtab" id="t1-exercises">
+          <h1 class="topic-title">Bit Manipulation — Exercises</h1>
+          <div class="exercise-set" id="t1-ex-content"></div>
+        </div>
+      </div>
+ 
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!--  TOPIC 2 — VOLATILE                                -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="panel" id="t2">
+        <div class="subtab active" id="t2-learn">
+          <h1 class="topic-title">volatile</h1>
+          <p class="topic-intro">Tells the compiler: "this value can change outside your knowledge — never cache it in a register, never optimise away a read or write." Missing <code style="font-family:var(--mono);color:var(--accent)">volatile</code> causes bugs that only appear in release builds, with optimisation enabled.</p>
+ 
+          <div class="section-label">The problem it solves</div>
+          <div class="code-wrap">
+            <div class="code-bar"><div class="code-dots"><span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span></div><span>volatile_demo.c</span></div>
+            <div class="code-block"><span class="cm">// WITHOUT volatile — BROKEN at -O2</span>
+<span class="kw">uint32_t</span> *STATUS = (<span class="kw">uint32_t</span>*)<span class="num">0x40020010</span>;
+<span class="kw">while</span> (*STATUS == <span class="num">0</span>) { }
+<span class="cm">// Compiler sees: STATUS never written in this loop</span>
+<span class="cm">// Optimises to:  while(1) {}    ← infinite loop in hardware!</span>
+ 
+<span class="cm">// WITH volatile — CORRECT</span>
+<span class="kw">volatile uint32_t</span> *STATUS = (<span class="kw">volatile uint32_t</span>*)<span class="num">0x40020010</span>;
+<span class="kw">while</span> (*STATUS == <span class="num">0</span>) { }
+<span class="cm">// Compiler: must re-read from address every iteration</span>
+ 
+<span class="cm">// ISR shared variable pattern</span>
+<span class="kw">volatile uint8_t</span>  rx_ready = <span class="num">0</span>;
+<span class="kw">volatile uint8_t</span>  rx_byte  = <span class="num">0</span>;
+ 
+<span class="kw">void</span> <span class="fn">UART_IRQHandler</span>(<span class="kw">void</span>) {
+    rx_byte  = UART-&gt;DR;  <span class="cm">// read hardware</span>
+    rx_ready = <span class="num">1</span>;         <span class="cm">// signal main — must be volatile!</span>
+}
+ 
+<span class="kw">void</span> <span class="fn">main_loop</span>(<span class="kw">void</span>) {
+    <span class="kw">while</span> (!rx_ready) { }  <span class="cm">// polls volatile — always re-reads</span>
+    <span class="fn">process</span>(rx_byte);
+    rx_ready = <span class="num">0</span>;
+}</div>
+          </div>
+ 
+          <div class="card-grid" style="margin-top:14px">
+            <div class="card"><h4>Hardware registers</h4><p>Changed by hardware, not your CPU code. Re-read every access.</p></div>
+            <div class="card"><h4>ISR shared flags</h4><p>Set in interrupt, read in main. Without volatile, main sees stale cached value.</p></div>
+            <div class="card"><h4>RTOS shared state</h4><p>Variables shared across tasks. Prevents reordering across context switches.</p></div>
+          </div>
+ 
+          <div class="callout warn">
+            <div><code>volatile</code> prevents caching — it does NOT guarantee atomicity on multi-byte variables. A 64-bit or struct update can still be interrupted mid-write. Use a critical section (<code>__disable_irq()</code>) for that.</div>
+          </div>
+        </div>
+ 
+        <div class="subtab" id="t2-quiz">
+          <h1 class="topic-title">volatile — Quiz</h1>
+          <div id="t2-quiz-content"></div>
+        </div>
+        <div class="subtab" id="t2-exercises">
+          <h1 class="topic-title">volatile — Exercises</h1>
+          <div class="exercise-set" id="t2-ex-content"></div>
+        </div>
+      </div>
+ 
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!--  TOPIC 3 — STRUCTS                                 -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="panel" id="t3">
+        <div class="subtab active" id="t3-learn">
+          <h1 class="topic-title">Structs</h1>
+          <p class="topic-intro">Structs group related data — and in firmware they do something crucial: they map directly onto peripheral register blocks, giving you named access to every register at a known offset.</p>
+ 
+          <div class="section-label">Peripheral register map pattern</div>
+          <div class="code-wrap">
+            <div class="code-bar"><div class="code-dots"><span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span></div><span>gpio_regmap.c</span></div>
+            <div class="code-block"><span class="kw">typedef struct</span> {
+    <span class="kw">volatile uint32_t</span> MODER;    <span class="cm">// offset 0x00 — pin direction</span>
+    <span class="kw">volatile uint32_t</span> OTYPER;   <span class="cm">// offset 0x04 — output type</span>
+    <span class="kw">volatile uint32_t</span> OSPEEDR;  <span class="cm">// offset 0x08 — speed</span>
+    <span class="kw">volatile uint32_t</span> PUPDR;    <span class="cm">// offset 0x0C — pull-up/down</span>
+    <span class="kw">volatile uint32_t</span> IDR;      <span class="cm">// offset 0x10 — input data</span>
+    <span class="kw">volatile uint32_t</span> ODR;      <span class="cm">// offset 0x14 — output data</span>
+    <span class="kw">volatile uint32_t</span> BSRR;     <span class="cm">// offset 0x18 — bit set/reset</span>
+} GPIO_TypeDef;
+ 
+<span class="mac">#define</span> GPIOA  ((GPIO_TypeDef *)<span class="num">0x40020000</span>)
+ 
+GPIOA-&gt;MODER |= (<span class="num">0b01</span> &lt;&lt; <span class="num">10</span>);   <span class="cm">// pin 5 = output</span>
+GPIOA-&gt;BSRR   = (<span class="num">1</span> &lt;&lt; <span class="num">5</span>);       <span class="cm">// drive pin 5 HIGH</span></div>
+          </div>
+ 
+          <div class="section-label">Padding &amp; alignment</div>
+          <div class="viz-box">
+            <div class="viz-label">struct &#123; uint8_t a; uint16_t b; uint8_t c; &#125; — compiler-inserted padding</div>
+            <table class="mem-table" style="width:auto">
+              <tr>
+                <td class="addr">+0</td><td class="val">a (1B)</td>
+                <td style="background:var(--red-bg);color:var(--red);font-family:var(--mono);font-size:11px;padding:7px 12px;border:1px solid var(--border)">pad</td>
+                <td class="val">b_lo</td><td class="val">b_hi</td>
+                <td class="val">c (1B)</td>
+                <td style="background:var(--red-bg);color:var(--red);font-family:var(--mono);font-size:11px;padding:7px 12px;border:1px solid var(--border)">pad</td>
+                <td style="background:var(--red-bg);color:var(--red);font-family:var(--mono);font-size:11px;padding:7px 12px;border:1px solid var(--border)">pad</td>
+              </tr>
+            </table>
+            <div style="margin-top:8px;font-size:11.5px;color:var(--text2)">sizeof = 8 bytes (not 4). Use <code style="font-family:var(--mono);color:var(--accent);font-size:11px">__attribute__((packed))</code> only for protocol frames — it hurts performance.</div>
+          </div>
+ 
+          <div class="card-grid" style="margin-top:14px">
+            <div class="card"><h4>-> operator</h4><p>Dereferences pointer AND accesses member: <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">GPIOA->ODR</code></p></div>
+            <div class="card"><h4>Bitfields</h4><p><code style="font-family:var(--mono);font-size:11px;color:var(--accent)">uint32_t en : 1;</code> packs named flags into a word.</p></div>
+            <div class="card"><h4>Designated init</h4><p><code style="font-family:var(--mono);font-size:11px;color:var(--accent">.field = val</code> initialises specific members safely.</p></div>
+          </div>
+        </div>
+ 
+        <div class="subtab" id="t3-quiz">
+          <h1 class="topic-title">Structs — Quiz</h1>
+          <div id="t3-quiz-content"></div>
+        </div>
+        <div class="subtab" id="t3-exercises">
+          <h1 class="topic-title">Structs — Exercises</h1>
+          <div class="exercise-set" id="t3-ex-content"></div>
+        </div>
+      </div>
+ 
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!--  TOPIC 4 — MEMORY LAYOUT                           -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="panel" id="t4">
+        <div class="subtab active" id="t4-learn">
+          <h1 class="topic-title">Memory Layout</h1>
+          <p class="topic-intro">Embedded systems have a fixed, non-virtual address space. Every address means something specific — Flash, SRAM, peripheral registers. Knowing the layout is essential for linker scripts, startup code, and debugging.</p>
+ 
+          <div class="section-label">Cortex-M address map</div>
+          <div class="mem-map">
+            <div class="mem-strip ms-sys"><span class="addr">0xFFFF_FFFF</span><span class="desc">System / vendor peripherals (SysTick, NVIC, SCB)</span><span class="badge diff-hard" style="font-family:var(--mono)">System</span></div>
+            <div class="mem-strip ms-per"><span class="addr">0x4000_0000</span><span class="desc">Peripheral registers (GPIO, UART, SPI, I2C, DMA…)</span><span class="badge diff-medium" style="font-family:var(--mono)">Peripheral</span></div>
+            <div class="mem-strip ms-ram"><span class="addr">0x2000_0000</span><span class="desc">SRAM — .data, .bss, stack, heap at runtime</span><span class="badge diff-easy" style="font-family:var(--mono)">RAM</span></div>
+            <div class="mem-strip ms-rom"><span class="addr">0x0800_0000</span><span class="desc">Flash — .text (code), .rodata (const strings)</span><span class="badge" style="background:var(--accent-bg);color:var(--accent);font-family:var(--mono)">Flash</span></div>
+            <div class="mem-strip ms-vec"><span class="addr">0x0000_0000</span><span class="desc">Vector table / boot ROM (remapped to Flash on reset)</span><span class="badge" style="background:var(--bg3);color:var(--text3);font-family:var(--mono)">Vectors</span></div>
+          </div>
+ 
+          <div class="section-label">Binary sections</div>
+          <div class="code-wrap">
+            <div class="code-bar"><div class="code-dots"><span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span></div><span>sections.c</span></div>
+            <div class="code-block"><span class="cm">// .text — compiled code (Flash, execute-only)</span>
+<span class="kw">void</span> <span class="fn">blink</span>(<span class="kw">void</span>) { ... }
+ 
+<span class="cm">// .rodata — read-only constants (Flash)</span>
+<span class="kw">const char</span> msg[] = <span class="str">"hello"</span>;
+ 
+<span class="cm">// .data — initialized globals (stored in Flash, copied to RAM at boot)</span>
+<span class="kw">uint32_t</span> counter = <span class="num">0xFF</span>;
+ 
+<span class="cm">// .bss — zero-initialized globals (RAM only, no Flash cost)</span>
+<span class="kw">uint8_t</span>  rx_buf[<span class="num">64</span>];
+ 
+<span class="cm">// Check your binary sizes:</span>
+<span class="cm">// arm-none-eabi-size firmware.elf</span>
+<span class="cm">//   text    data     bss     dec</span>
+<span class="cm">//   4096      32     128    4256</span></div>
+          </div>
+ 
+          <div class="callout">
+            <div>The startup code (crt0/SystemInit) copies <code>.data</code> from Flash to RAM and zeroes <code>.bss</code> before <code>main()</code> runs. If you forget this in a custom startup, your global variables will be garbage.</div>
+          </div>
+        </div>
+ 
+        <div class="subtab" id="t4-quiz">
+          <h1 class="topic-title">Memory Layout — Quiz</h1>
+          <div id="t4-quiz-content"></div>
+        </div>
+        <div class="subtab" id="t4-exercises">
+          <h1 class="topic-title">Memory Layout — Exercises</h1>
+          <div class="exercise-set" id="t4-ex-content"></div>
+        </div>
+      </div>
+ 
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!--  TOPIC 5 — INTERRUPTS                              -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="panel" id="t5">
+        <div class="subtab active" id="t5-learn">
+          <h1 class="topic-title">Interrupts + Shared Variables</h1>
+          <p class="topic-intro">An interrupt pauses the CPU mid-instruction, runs your ISR, then resumes. Any variable shared between the ISR and main code is a potential race condition — you must handle it explicitly every time.</p>
+ 
+          <div class="section-label">Correct pattern</div>
+          <div class="code-wrap">
+            <div class="code-bar"><div class="code-dots"><span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span></div><span>isr_pattern.c</span></div>
+            <div class="code-block"><span class="cm">// Step 1: volatile on every shared variable</span>
+<span class="kw">volatile uint8_t</span>  adc_done  = <span class="num">0</span>;
+<span class="kw">volatile uint16_t</span> adc_value = <span class="num">0</span>;
+ 
+<span class="cm">// Step 2: ISR — short, fast, no blocking</span>
+<span class="kw">void</span> <span class="fn">ADC_IRQHandler</span>(<span class="kw">void</span>) {
+    adc_value = ADC1-&gt;DR;      <span class="cm">// read result</span>
+    adc_done  = <span class="num">1</span>;             <span class="cm">// signal main</span>
+    ADC1-&gt;SR &amp;= ~ADC_SR_EOC;  <span class="cm">// clear flag — ALWAYS do this!</span>
+}
+ 
+<span class="cm">// Step 3: main polls the flag</span>
+<span class="kw">while</span> (<span class="num">1</span>) {
+    <span class="kw">if</span> (adc_done) {
+        adc_done = <span class="num">0</span>;          <span class="cm">// clear BEFORE using value</span>
+        <span class="fn">process</span>(adc_value);
+    }
+}
+ 
+<span class="cm">// Step 4: critical section for multi-byte access</span>
+<span class="fn">__disable_irq</span>();
+<span class="kw">uint64_t</span> snap = big_counter;   <span class="cm">// 64-bit — not atomic!</span>
+<span class="fn">__enable_irq</span>();</div>
+          </div>
+ 
+          <div class="card-grid" style="margin-top:14px">
+            <div class="card"><h4>ISR rules</h4><p>Never block. Never printf. Return in microseconds, not milliseconds.</p></div>
+            <div class="card"><h4>Clear the flag</h4><p>If the hardware interrupt flag stays set, the ISR fires again immediately on exit.</p></div>
+            <div class="card"><h4>Atomicity</h4><p>32-bit R/W is atomic on Cortex-M. 64-bit and structs are NOT — use critical section.</p></div>
+            <div class="card"><h4>Priority</h4><p>Higher-priority IRQs pre-empt lower ones. Design priority levels deliberately.</p></div>
+          </div>
+        </div>
+ 
+        <div class="subtab" id="t5-quiz">
+          <h1 class="topic-title">Interrupts — Quiz</h1>
+          <div id="t5-quiz-content"></div>
+        </div>
+        <div class="subtab" id="t5-exercises">
+          <h1 class="topic-title">Interrupts — Exercises</h1>
+          <div class="exercise-set" id="t5-ex-content"></div>
+        </div>
+      </div>
+ 
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!--  TOPIC 6 — REGISTER PROGRAMMING                    -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div class="panel" id="t6">
+        <div class="subtab active" id="t6-learn">
+          <h1 class="topic-title">Register Programming</h1>
+          <p class="topic-intro">Peripherals are configured by writing specific bit patterns to memory-mapped registers. Every GPIO mode, UART baud rate, timer period, and DMA channel is controlled this way — directly, with no abstraction layer.</p>
+ 
+          <div class="section-label">Interactive — GPIOA MODER (click bits)</div>
+          <div class="viz-box">
+            <div class="viz-label">MODER: 2 bits per pin — 00=Input, 01=Output, 10=Alternate, 11=Analog</div>
+            <div class="reg-grid" id="reg-bits"></div>
+            <div class="reg-names" id="reg-names"></div>
+            <div class="reg-val-display" id="reg-val-display">0x00000000</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px" id="reg-hint">Toggle bits to update the register value</div>
+          </div>
+ 
+          <div class="section-label">Read-modify-write — the golden rule</div>
+          <div class="code-wrap">
+            <div class="code-bar"><div class="code-dots"><span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span></div><span>rmw.c</span></div>
+            <div class="code-block"><span class="cm">// WRONG — blows away every other bit in the register</span>
+GPIOA-&gt;MODER = (<span class="num">0b01</span> &lt;&lt; <span class="num">10</span>);
+ 
+<span class="cm">// CORRECT — read, modify the field, write back</span>
+GPIOA-&gt;MODER &amp;= ~(<span class="num">0x3</span> &lt;&lt; <span class="num">10</span>);   <span class="cm">// clear bits [11:10]</span>
+GPIOA-&gt;MODER |=  (<span class="num">0x1</span> &lt;&lt; <span class="num">10</span>);   <span class="cm">// set bits [11:10] = 01</span>
+ 
+<span class="cm">// Full UART init at 115200 (STM32, PCLK=16 MHz)</span>
+RCC-&gt;APB2ENR |= RCC_APB2ENR_USART1EN;  <span class="cm">// clock on</span>
+RCC-&gt;AHB1ENR |= RCC_AHB1ENR_GPIOAEN;  <span class="cm">// GPIO clock</span>
+ 
+GPIOA-&gt;MODER &amp;= ~(<span class="num">0xF</span> &lt;&lt; <span class="num">18</span>);
+GPIOA-&gt;MODER |=  (<span class="num">0xA</span> &lt;&lt; <span class="num">18</span>);        <span class="cm">// PA9/PA10 = AF</span>
+GPIOA-&gt;AFR[<span class="num">1</span>] |= (<span class="num">0x77</span> &lt;&lt; <span class="num">4</span>);       <span class="cm">// AF7 = USART1</span>
+ 
+USART1-&gt;BRR = <span class="num">139</span>;                    <span class="cm">// 16M/115200</span>
+USART1-&gt;CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;
+ 
+<span class="kw">while</span> (!(USART1-&gt;SR &amp; USART_SR_TXE)) { }
+USART1-&gt;DR = <span class="str">'H'</span>;</div>
+          </div>
+        </div>
+ 
+        <div class="subtab" id="t6-quiz">
+          <h1 class="topic-title">Register Programming — Quiz</h1>
+          <div id="t6-quiz-content"></div>
+        </div>
+        <div class="subtab" id="t6-exercises">
+          <h1 class="topic-title">Register Programming — Exercises</h1>
+          <div class="exercise-set" id="t6-ex-content"></div>
+        </div>
+      </div>
+ 
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+ 
+<script>
+/* ── State ────────────────────────────────────────────────── */
+let currentTopic = 0;
+let currentSubtab = 'learn';
+const topicNames = ['Pointers','Bit Manipulation','volatile','Structs','Memory Layout','Interrupts','Register Programming'];
+const visited = new Set([0]);
+const topicFolders = ['Pointers','BitManipulation','Volatile','Structs','MemoryLayout','Interrupts','RegisterProgramming'];
+const topicCache = {};  // { tid: { quiz: [...], exercises: [...] } }
+ 
+
+/* ── Navigation ───────────────────────────────────────────── */
+function showTopic(idx, btn) {
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i === idx));
+  document.querySelectorAll('.nav-btn').forEach((b,i) => b.classList.toggle('active', i === idx));
+  currentTopic = idx;
+  document.getElementById('topbar-name').textContent = topicNames[idx];
+  visited.add(idx);
+  updateProgress();
+  // Reset to learn subtab
+  showSubtab('learn', document.querySelector('.tab-btn'));
+}
+ 
+function showSubtab(name, btn) {
+  currentSubtab = name;
+  // Update tab buttons
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.toLowerCase().startsWith(name)) b.classList.add('active');
+  });
+  // Show correct subtab in active panel
+  const panel = document.querySelector('.panel.active');
+  if (!panel) return;
+  panel.querySelectorAll('.subtab').forEach(s => s.classList.remove('active'));
+  const target = panel.querySelector(`#t${currentTopic}-${name}`);
+  if (target) target.classList.add('active');
+  // Lazy-render quiz/exercises
+  if (name === 'quiz') loadTopicData(currentTopic).then(() => renderQuiz(currentTopic));
+  if (name === 'exercises') loadTopicData(currentTopic).then(() => renderExercises(currentTopic));
+}
+ 
+async function loadTopicData(tid) {
+  if (topicCache[tid]) return;
+  const folder = topicFolders[tid];
+  topicCache[tid] = {
+    quiz: window[`_quiz_${folder}`] || [],
+    exercises: window[`_ex_${folder}`] || []
+  };
+}
+
+function updateProgress() {
+  const pct = (visited.size / 7) * 100;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent = visited.size + ' / 7';
+}
+ 
+/* ── Quiz render ──────────────────────────────────────────── */
+function renderQuiz(tid) {
+  const el = document.getElementById(`t${tid}-quiz-content`);
+  if (el.dataset.rendered) return;
+  el.dataset.rendered = '1';
+  const qs = (topicCache[tid] && topicCache[tid].quiz) || [];
+  el.innerHTML = qs.map((q, qi) => `
+    <div style="margin-bottom:20px">
+      <div class="section-label">Question ${qi+1} of ${qs.length}</div>
+      <div class="quiz-box">
+        <div class="quiz-q">${q.q}</div>
+        <div class="quiz-options">
+          ${q.opts.map((o,oi) => `<button class="qbtn" onclick="checkQuiz(this,${tid},${qi},${oi})">${o}</button>`).join('')}
+        </div>
+        <div class="quiz-feedback" id="qf-${tid}-${qi}"></div>
+      </div>
+    </div>
+  `).join('');
+}
+ 
+function checkQuiz(btn, tid, qi, oi) {
+  const qs = topicCache[tid].quiz;
+  const q = qs[qi];
+  const siblings = btn.closest('.quiz-options').querySelectorAll('.qbtn');
+  siblings.forEach(b => b.disabled = true);
+  btn.classList.add(oi === q.ans ? 'correct' : 'wrong');
+  siblings[q.ans].classList.add('correct');
+  const fb = document.getElementById(`qf-${tid}-${qi}`);
+  fb.textContent = q.exp;
+  fb.className = 'quiz-feedback show ' + (oi === q.ans ? 'ok' : 'bad');
+}
+ 
+/* ── Exercise render ──────────────────────────────────────── */
+function renderExercises(tid) {
+  const el = document.getElementById(`t${tid}-ex-content`);
+  if (el.dataset.rendered) return;
+  el.dataset.rendered = '1';
+  const exs = (topicCache[tid] && topicCache[tid].exercises) || [];
+  el.innerHTML = exs.map((ex, ei) => `
+    <div class="exercise" id="ex-${tid}-${ei}">
+      <div class="ex-header" onclick="toggleEx(${tid},${ei})">
+        <span class="ex-num">EX ${String(ei+1).padStart(2,'0')}</span>
+        <span class="ex-title">${ex.title}</span>
+        <span class="ex-diff diff-${ex.diff}">${ex.diff}</span>
+        <span class="ex-chevron" id="chev-${tid}-${ei}">›</span>
+      </div>
+      <div class="ex-body" id="exb-${tid}-${ei}">
+        <div class="ex-desc">${ex.desc.replace(/\n/g,'<br>').replace(/<code>/g,'<code style="font-family:var(--mono);color:var(--accent);font-size:11.5px;background:var(--bg3);padding:1px 5px;border-radius:3px">').replace(/<\/code>/g,'</code>')}</div>
+        <button class="hint-btn" onclick="toggleHint(${tid},${ei})">&#9679; Show hint</button>
+        <div class="hint-box" id="hint-${tid}-${ei}">${ex.hint.replace(/<code>/g,'<code>').replace(/`([^`]+)`/g,'<code style="font-family:var(--mono);font-size:11px">$1</code>')}</div>
+        <!-- Monaco Code Editor -->
+        <div class="code-editor-wrap">
+          <div class="code-editor-toolbar">
+            <div class="code-editor-toolbar-left">
+              <span class="code-editor-filename">solution.c</span>
+            </div>
+            <div class="code-editor-toolbar-right">
+              <button class="editor-action-btn" onclick="copyCode(${tid},${ei})">📋 Copy</button>
+              <button class="editor-action-btn" onclick="clearEditor(${tid},${ei})">🗑️ Clear</button>
+              <button class="editor-action-btn primary" onclick="openInProgramiz(${tid},${ei})">▶ Run in Programiz</button>
+            </div>
+          </div>
+          <div class="code-editor-body">
+            <div class="monaco-container" id="editor-${tid}-${ei}"></div>
+          </div>
+          <div class="code-editor-footer">
+            <span id="line-count-${tid}-${ei}">Ln 1, Col 1</span>
+            <span>C &nbsp;·&nbsp; Monaco Editor</span>
+          </div>
+        </div>
+        
+        <button class="answer-btn" onclick="toggleAnswer(${tid},${ei})">&#10003; Show answer</button>
+        <div class="answer-box" id="ans-${tid}-${ei}">
+          ${ex.answer ? `<div style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:10px;padding:12px 14px;background:var(--green-bg);border:1px solid rgba(63,185,80,0.25);border-radius:6px">${ex.answer}</div>` : ''}
+          ${ex.ansCode ? `<div class="code-wrap"><div class="code-bar"><div class="code-dots"><span class="code-dot"></span><span class="code-dot"></span><span class="code-dot"></span></div><span>answer</span></div><div class="code-block">${escHtml(ex.ansCode)}</div></div>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+ 
+function toggleEx(tid, ei) {
+  const body = document.getElementById(`exb-${tid}-${ei}`);
+  const chev = document.getElementById(`chev-${tid}-${ei}`);
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+  if (open) initMonacoEditor(tid, ei);
+}
+ 
+function toggleHint(tid, ei) {
+  document.getElementById(`hint-${tid}-${ei}`).classList.toggle('show');
+}
+ 
+function toggleAnswer(tid, ei) {
+  document.getElementById(`ans-${tid}-${ei}`).classList.toggle('show');
+}
+ 
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Monaco Editor Setup ─────────────────────────────────── */
+const monacoEditors = {};
+
+require.config({
+  paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }
+});
+
+function initMonacoEditor(tid, ei) {
+  const key = `${tid}-${ei}`;
+  if (monacoEditors[key]) return;
+  const container = document.getElementById(`editor-${tid}-${ei}`);
+  if (!container) return;
+  require(['vs/editor/editor.main'], function() {
+    const instance = monaco.editor.create(container, {
+      value: '// Write your solution here\n',
+      language: 'c',
+      theme: 'vs-dark',
+      fontSize: 13,
+      fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+      fontLigatures: true,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      lineNumbers: 'on',
+      renderLineHighlight: 'line',
+      tabSize: 2,
+      insertSpaces: true,
+      wordWrap: 'on',
+      automaticLayout: true,
+      padding: { top: 12, bottom: 12 },
+      scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+    });
+    monacoEditors[key] = instance;
+    instance.onDidChangeCursorPosition(e => {
+      const el = document.getElementById(`line-count-${tid}-${ei}`);
+      if (el) el.textContent = `Ln ${e.position.lineNumber}, Col ${e.position.column}`;
+    });
+  });
+}
+
+/* ── Code Editor Functions ────────────────────────────────── */
+function copyCode(tid, ei) {
+  const instance = monacoEditors[`${tid}-${ei}`];
+  if (!instance) return;
+  navigator.clipboard.writeText(instance.getValue())
+    .then(() => showToast('Code copied to clipboard!'));
+}
+
+function clearEditor(tid, ei) {
+  const instance = monacoEditors[`${tid}-${ei}`];
+  if (!instance) return;
+  if (instance.getValue().trim() && !confirm('Clear all code? This cannot be undone.')) return;
+  instance.setValue('// Write your solution here\n');
+  showToast('Editor cleared');
+}
+
+function openInProgramiz(tid, ei) {
+  const instance = monacoEditors[`${tid}-${ei}`];
+  if (!instance) return;
+  const code = instance.getValue().trim();
+  if (!code || code === '// Write your solution here') {
+    alert('Please write some code first!');
+    return;
+  }
+  navigator.clipboard.writeText(code).then(() => {
+    window.open('https://www.programiz.com/c-programming/online-compiler/', '_blank');
+    showToast('Code copied! Paste it in Programiz and click Run.');
+  });
+}
+
+function showToast(message) {
+  // Create toast if it doesn't exist
+  let toast = document.getElementById('toast-notification');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-notification';
+    toast.className = 'toast-notification';
+    document.body.appendChild(toast);
+  }
+  
+  toast.textContent = '✓ ' + message;
+  toast.classList.add('show');
+  
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3000);
+}
+ 
+/* ── Bit viz ──────────────────────────────────────────────── */
+let bits = 0b00101100;
+function renderBits() {
+  const row = document.getElementById('bit-row');
+  const lbls = document.getElementById('bit-labels');
+  const res = document.getElementById('bit-results');
+  if (!row) return;
+  row.innerHTML = lbls.innerHTML = '';
+  for (let i = 7; i >= 0; i--) {
+    const b = document.createElement('div');
+    b.className = 'bit' + ((bits >> i & 1) ? ' on' : '');
+    b.textContent = (bits >> i & 1);
+    b.onclick = () => { bits ^= (1 << i); renderBits(); };
+    row.appendChild(b);
+    const l = document.createElement('div');
+    l.className = 'bit-lbl';
+    l.textContent = 'b' + i;
+    lbls.appendChild(l);
+  }
+  if (res) res.innerHTML = `
+    <div class="chip">Hex: <span>0x${bits.toString(16).toUpperCase().padStart(2,'0')}</span></div>
+    <div class="chip">Dec: <span>${bits}</span></div>
+    <div class="chip">Binary: <span>0b${bits.toString(2).padStart(8,'0')}</span></div>
+  `;
+}
+renderBits();
+ 
+/* ── Register viz ─────────────────────────────────────────── */
+let regVal = 0;
+const pinNames = ['P15','P14','P13','P12','P11','P10','P9','P8'];
+function initRegViz() {
+  const grid = document.getElementById('reg-bits');
+  const names = document.getElementById('reg-names');
+  if (!grid) return;
+  for (let i = 0; i < 8; i++) {
+    const b = document.createElement('div');
+    b.className = 'reg-bit'; b.id = 'rb' + i; b.textContent = '0';
+    b.onclick = () => {
+      const bit = 7 - i;
+      regVal ^= (1 << bit);
+      b.textContent = (regVal >> bit) & 1;
+      b.classList.toggle('set', !!((regVal >> bit) & 1));
+      document.getElementById('reg-val-display').textContent = '0x' + regVal.toString(16).toUpperCase().padStart(8,'0');
+      document.getElementById('reg-hint').textContent = 'MODER value updated — each pin uses 2 bits';
+    };
+    grid.appendChild(b);
+    const n = document.createElement('div');
+    n.className = 'reg-name'; n.textContent = pinNames[i];
+    names.appendChild(n);
+  }
+}
+initRegViz();
+ 
+/* ── Init ─────────────────────────────────────────────────── */
+document.getElementById('t0-theory').innerHTML = window._theory_Pointers || '';
+updateProgress();
+</script>
+</body>
+</html>
